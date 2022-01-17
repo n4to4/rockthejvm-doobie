@@ -88,6 +88,14 @@ object DoobieDemo extends IOApp.Simple {
       .transact(xa)
   }
 
+  // update/insert many
+  def saveMultipleActors(actorNames: List[String]): IO[List[Actor]] = {
+    val insertStatement = "insert into actors (name) values (?)"
+    val updateAction = Update[String](insertStatement)
+      .updateManyWithGeneratedKeys[Actor]("id", "name")(actorNames)
+    updateAction.compile.toList.transact(xa)
+  }
+
   def run: IO[Unit] =
-    saveActor_v2(8, "Mary").debug.void
+    saveMultipleActors(List("Anne", "Bob", "Charlie")).debug.void
 }
