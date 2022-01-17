@@ -1,6 +1,7 @@
 import cats.effect.{ExitCode, IO, IOApp}
-import doobie.util.transactor.Transactor
 import doobie.implicits._
+import doobie.util.transactor.Transactor
+import doobie.{HC, HPS}
 
 object DoobieDemo extends IOApp.Simple {
   case class Actor(id: Int, name: String)
@@ -45,6 +46,19 @@ object DoobieDemo extends IOApp.Simple {
     .toList
     .transact(xa)
 
+  // HC, HPS
+  def findActorByName(name: String): IO[Option[Actor]] = {
+    val queryString = "select id, name from actors where name = ?"
+    HC.stream[Actor](
+      queryString,
+      HPS.set(name),
+      100
+    ).compile
+      .toList
+      .map(_.headOption)
+      .transact(xa)
+  }
+
   def run: IO[Unit] =
-    actorNamesStream.debug.void
+    findActorByName("Henry Cavill").debug.void
 }
