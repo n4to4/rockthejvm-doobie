@@ -3,6 +3,15 @@ import doobie.util.transactor.Transactor
 import doobie.implicits._
 
 object DoobieDemo extends IOApp {
+  case class Actor(id: Int, name: String)
+  case class Movie(
+      id: String,
+      title: String,
+      year: Int,
+      actors: List[String],
+      director: String
+  )
+
   implicit class Debugger[A](io: IO[A]) {
     def debug: IO[A] = io.map { a =>
       println(s"[${Thread.currentThread().getName}] $a")
@@ -23,6 +32,12 @@ object DoobieDemo extends IOApp {
     action.transact(xa)
   }
 
+  def findActorById(id: Int): IO[Actor] = {
+    val query = sql"select id, name from actors where id = $id".query[Actor]
+    val action = query.unique
+    action.transact(xa)
+  }
+
   def run(args: List[String]): IO[ExitCode] =
-    findAllActorNames.debug.as(ExitCode.Success)
+    findActorById(1).debug.as(ExitCode.Success)
 }
