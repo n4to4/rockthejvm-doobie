@@ -69,6 +69,12 @@ object DoobieDemo extends IOApp.Simple {
     statement.query[Actor].stream.compile.toList.transact(xa)
   }
 
+  // update
+  def saveActor(id: Int, name: String): IO[Int] = {
+    val query = sql"insert into actors (id, name) values ($id, $name)"
+    query.update.run.transact(xa)
+  }
+
   def run: IO[Unit] =
-    findActorsByInitial("H").debug.void
+    saveActor(99, "Alice").debug.void
 }
