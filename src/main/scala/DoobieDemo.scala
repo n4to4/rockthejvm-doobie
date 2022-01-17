@@ -2,7 +2,7 @@ import cats.effect.{ExitCode, IO, IOApp}
 import doobie.util.transactor.Transactor
 import doobie.implicits._
 
-object DoobieDemo extends IOApp {
+object DoobieDemo extends IOApp.Simple {
   case class Actor(id: Int, name: String)
   case class Movie(
       id: String,
@@ -32,12 +32,19 @@ object DoobieDemo extends IOApp {
     action.transact(xa)
   }
 
-  def findActorById(id: Int): IO[Actor] = {
+  def findActorById(id: Int): IO[Option[Actor]] = {
     val query = sql"select id, name from actors where id = $id".query[Actor]
-    val action = query.unique
+    val action = query.option
     action.transact(xa)
   }
 
-  def run(args: List[String]): IO[ExitCode] =
-    findActorById(1).debug.as(ExitCode.Success)
+  lazy val actorNamesStream = sql"select name from actors"
+    .query[String]
+    .stream
+    .compile
+    .toList
+    .transact(xa)
+
+  def run: IO[Unit] =
+    actorNamesStream.debug.void
 }
