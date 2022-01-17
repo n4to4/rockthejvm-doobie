@@ -59,6 +59,16 @@ object DoobieDemo extends IOApp.Simple {
       .transact(xa)
   }
 
+  // fragments
+  def findActorsByInitial(letter: String): IO[List[Actor]] = {
+    val selectPart = fr"select id, name"
+    val fromPart = fr"from actors"
+    val wherePart = fr"where LEFT(name, 1) = $letter"
+
+    val statement = selectPart ++ fromPart ++ wherePart
+    statement.query[Actor].stream.compile.toList.transact(xa)
+  }
+
   def run: IO[Unit] =
-    findActorByName("Henry Cavill").debug.void
+    findActorsByInitial("H").debug.void
 }
