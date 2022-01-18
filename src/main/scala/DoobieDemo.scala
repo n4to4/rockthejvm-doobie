@@ -1,9 +1,12 @@
 import cats.effect.{ExitCode, IO, IOApp}
+import doobie._
+import cats.implicits._
 import doobie.implicits._
 import doobie.{HC, HPS}
 import doobie.util.transactor.Transactor
 import doobie.util.update.Update
 import doobie.util.{Get, Put, Read, Write}
+import java.util.UUID
 
 object DoobieDemo extends IOApp.Simple {
   case class Actor(id: Int, name: String)
@@ -156,6 +159,45 @@ object DoobieDemo extends IOApp.Simple {
     statement.query[Movie].option.transact(xa)
   }
 
+  def findMovieByTitle_v2(title: String): IO[Option[Movie]] = {
+    def findMovieByTitle() =
+      sql"select id, title, year_of_production, director_id from movies where title = $title"
+        .query[(UUID, String, Int, Int)]
+        .option
+
+    def findDirectorById(directorId: Int) =
+      sql"select name, last_name from directors where id = $directorId"
+        .query[(String, String)]
+        .option
+
+    def findActorsByMovieId(movieId: UUID) =
+      sql"""
+          select a.name
+          from actors a
+          join movies_actors ma on a.id = ma.actor_id
+          where ma.movie_id = $movieId
+          """
+        .query[String]
+        .to[List]
+
+    val query = for {
+      maybeMovie <- findMovieByTitle()
+      maybeDirector <- maybeMovie match {
+        case Some((_, _, _, directorId)) => findDirectorById(directorId)
+        case None => Option.empty[(String, String)].pure[ConnectionIO]
+      }
+      actors <- maybeMovie match {
+        case Some((movieId, _, _, _)) => findActorsByMovieId(movieId)
+        case None                     => List.empty[String].pure[ConnectionIO]
+      }
+    } yield for {
+      (id, t, year, _) <- maybeMovie
+      (firstName, lastName) <- maybeDirector
+    } yield Movie(id.toString, t, year, actors, s"$firstName $lastName")
+
+    query.transact(xa)
+  }
+
   override def run: IO[Unit] =
-    findMovieByTitle("Zack Snyder's Justice League").debug.void
+    findMovieByTitle_v2("Zack Snyder's Justice League").debug.void
 }
