@@ -15,6 +15,19 @@ object TaglessFinal {
       case And(a, b) => eval(a) && eval(b)
       case Not(e)    => !eval(e)
     }
+
+    // includes ints
+    case class I(int: Int) extends Expr
+    case class Sum(left: Expr, right: Expr) extends Expr
+
+    def eval_v2(expr: Expr): Any = expr match {
+      case B(b) => b
+      case Or(a, b) =>
+        eval(a).asInstanceOf[Boolean] || eval(b).asInstanceOf[Boolean]
+      // casts everywhere
+    }
+
+    object Solution1
   }
 
   def main(args: Array[String]): Unit = {}
