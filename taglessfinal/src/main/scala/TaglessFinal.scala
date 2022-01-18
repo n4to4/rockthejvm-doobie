@@ -99,6 +99,39 @@ object TaglessFinal {
     def eval[A](expr: Expr[A]): A = expr.value
   }
 
+  // F[_]: Monad = "tagless final"
+  object TaglessFinal_v2 {
+    trait Algebra[E[_]] {
+      def b(boolean: Boolean): E[Boolean]
+      def i(int: Int): E[Int]
+      def and(left: E[Boolean], right: E[Boolean]): E[Boolean]
+      def or(left: E[Boolean], right: E[Boolean]): E[Boolean]
+      def sum(left: E[Int], right: E[Int]): E[Int]
+    }
+
+    case class SimpleExpr[A](value: A)
+    given simpleAlgebra: Algebra[SimpleExpr] with {
+      override def b(boolean: Boolean) = SimpleExpr(boolean)
+      override def i(int: Int) = SimpleExpr(int)
+      override def and(left: SimpleExpr[Boolean], right: SimpleExpr[Boolean]) =
+        SimpleExpr(left.value && right.value)
+      override def or(left: SimpleExpr[Boolean], right: SimpleExpr[Boolean]) =
+        SimpleExpr(left.value || right.value)
+      override def sum(left: SimpleExpr[Int], right: SimpleExpr[Int]) =
+        SimpleExpr(left.value + right.value)
+    }
+
+    def program1[E[_]](using alg: Algebra[E]): E[Boolean] = {
+      import alg._
+      or(b(true), and(b(true), b(false)))
+    }
+
+    def program2[E[_]](using alg: Algebra[E]): E[Int] = {
+      import alg._
+      sum(i(24), i(-3))
+    }
+  }
+
   def demoTagless(): Unit = {
     import TaglessInitial._
     println(eval(Or(B(true), And(B(true), B(false)))))
@@ -111,7 +144,13 @@ object TaglessFinal {
     println(eval(sum(i(24), i(-3))))
   }
 
+  def demoTaglessFinal_v2(): Unit = {
+    import TaglessFinal_v2._
+    println(program1[SimpleExpr].value)
+    println(program2[SimpleExpr].value)
+  }
+
   def main(args: Array[String]): Unit = {
-    demoTaglessFinal()
+    demoTaglessFinal_v2()
   }
 }
