@@ -3,7 +3,7 @@ import doobie.implicits._
 import doobie.{HC, HPS}
 import doobie.util.transactor.Transactor
 import doobie.util.update.Update
-import doobie.util.{Get, Put}
+import doobie.util.{Get, Put, Read, Write}
 
 object DoobieDemo extends IOApp.Simple {
   case class Actor(id: Int, name: String)
@@ -112,6 +112,50 @@ object DoobieDemo extends IOApp.Simple {
   def findAllActorNamesCustomClass: IO[List[ActorName]] =
     sql"select name from actors".query[ActorName].to[List].transact(xa)
 
+  // "value types"
+  case class DirectorId(id: Int)
+  case class DirectorName(name: String)
+  case class DirectorLastName(lastName: String)
+  case class Director(
+      id: DirectorId,
+      name: DirectorName,
+      lastName: DirectorLastName
+  )
+  object Director {
+    implicit val directorRead: Read[Director] =
+      Read[(Int, String, String)].map { case (id, name, lastName) =>
+        Director(DirectorId(id), DirectorName(name), DirectorLastName(lastName))
+      }
+
+    implicit val directorWrite: Write[Director] =
+      Write[(Int, String, String)].contramap {
+        case (Director(
+              DirectorId(id),
+              DirectorName(name),
+              DirectorLastName(lastName)
+            )) =>
+          (id, name, lastName)
+      }
+  }
+
+  import doobie.postgres._
+  import doobie.postgres.implicits._
+
+  // write large queries
+  def findMovieByTitle(title: String): IO[Option[Movie]] = {
+    val statement =
+      sql"""
+      select m.id, m.title, m.year_of_production, array_agg(a.name) as actors, d.name || ' ' || d.last_name
+      from movies m
+      join movies_actors ma on m.id = ma.movie_id
+      join actors a on ma.actor_id = a.id
+      join directors d on m.director_id = d.id
+      where m.title = $title
+      group by (m.id, m.title, m.year_of_production, d.name, d.last_name)
+      """
+    statement.query[Movie].option.transact(xa)
+  }
+
   override def run: IO[Unit] =
-    findAllActorNamesCustomClass.debug.void
+    findMovieByTitle("Zack Snyder's Justice League").debug.void
 }
