@@ -1,11 +1,13 @@
-import cats.effect.{ExitCode, IO, IOApp}
-import doobie._
 import cats.implicits._
+import cats.effect.{ExitCode, IO, IOApp}
+import doobie.ConnectionIO
 import doobie.implicits._
 import doobie.{HC, HPS}
 import doobie.util.transactor.Transactor
 import doobie.util.update.Update
 import doobie.util.{Get, Put, Read, Write}
+import doobie.postgres._
+import doobie.postgres.implicits._
 import java.util.UUID
 
 object DoobieDemo extends IOApp.Simple {
@@ -140,9 +142,6 @@ object DoobieDemo extends IOApp.Simple {
           (id, name, lastName)
       }
   }
-
-  import doobie.postgres._
-  import doobie.postgres.implicits._
 
   // write large queries
   def findMovieByTitle(title: String): IO[Option[Movie]] = {
