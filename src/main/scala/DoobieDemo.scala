@@ -1,8 +1,9 @@
 import cats.effect.{ExitCode, IO, IOApp}
 import doobie.implicits._
+import doobie.{HC, HPS}
 import doobie.util.transactor.Transactor
 import doobie.util.update.Update
-import doobie.{HC, HPS}
+import doobie.util.{Get, Put}
 
 object DoobieDemo extends IOApp.Simple {
   case class Actor(id: Int, name: String)
@@ -96,6 +97,21 @@ object DoobieDemo extends IOApp.Simple {
     updateAction.compile.toList.transact(xa)
   }
 
-  def run: IO[Unit] =
-    saveMultipleActors(List("Anne", "Bob", "Charlie")).debug.void
+  // type classes
+  class ActorName(val value: String) {
+    override def toString = value
+  }
+  object ActorName {
+    implicit val actorNameGet: Get[ActorName] =
+      Get[String].map(string => new ActorName(string))
+
+    implicit val actorNamePut: Put[ActorName] =
+      Put[String].contramap(actorName => actorName.value)
+  }
+
+  def findAllActorNamesCustomClass: IO[List[ActorName]] =
+    sql"select name from actors".query[ActorName].to[List].transact(xa)
+
+  override def run: IO[Unit] =
+    findAllActorNamesCustomClass.debug.void
 }
