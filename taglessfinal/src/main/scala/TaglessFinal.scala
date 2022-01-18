@@ -72,6 +72,7 @@ object TaglessFinal {
   def demoTagless(): Unit = {
     import Tagless._
     println(eval(Or(B(true), And(B(true), B(false)))))
+    println(eval(Sum(I(24), I(-3))))
   }
 
   def main(args: Array[String]): Unit = {
