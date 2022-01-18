@@ -27,7 +27,26 @@ object TaglessFinal {
       // casts everywhere
     }
 
-    object Solution1
+    object Tagging {
+      trait Expr(val tag: String)
+      case class B(boolean: Boolean) extends Expr("bool")
+      case class Or(left: Expr, right: Expr) extends Expr("bool")
+      case class And(left: Expr, right: Expr) extends Expr("bool")
+      case class Not(expr: Expr) extends Expr("bool")
+      case class I(int: Int) extends Expr("int")
+      case class Sum(left: Expr, right: Expr) extends Expr("int")
+
+      def eval(expr: Expr): Any = expr match {
+        case B(b) => b
+        case Or(left, right) =>
+          if (left.tag != "bool" || right.tag != "bool")
+            throw new IllegalArgumentException("improper argument type")
+          else
+            eval(left).asInstanceOf[Boolean] ||
+            eval(right).asInstanceOf[Boolean]
+        // same
+      }
+    }
   }
 
   def main(args: Array[String]): Unit = {}
