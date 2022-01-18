@@ -49,7 +49,7 @@ object TaglessFinal {
     }
   }
 
-  object Tagless {
+  object TaglessInitial {
     trait Expr[A]
     case class B(boolean: Boolean) extends Expr[Boolean]
     case class Or(left: Expr[Boolean], right: Expr[Boolean])
@@ -70,7 +70,7 @@ object TaglessFinal {
   }
 
   def demoTagless(): Unit = {
-    import Tagless._
+    import TaglessInitial._
     println(eval(Or(B(true), And(B(true), B(false)))))
     println(eval(Sum(I(24), I(-3))))
   }
