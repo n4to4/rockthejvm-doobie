@@ -1,13 +1,14 @@
 import cats.implicits._
-import cats.effect.{ExitCode, IO, IOApp}
+import cats.effect.{ExitCode, IO, IOApp, MonadCancelThrow, Resource}
 import doobie.ConnectionIO
 import doobie.implicits._
-import doobie.{HC, HPS}
+import doobie._
 import doobie.util.transactor.Transactor
 import doobie.util.update.Update
 import doobie.util.{Get, Put, Read, Write}
 import doobie.postgres._
 import doobie.postgres.implicits._
+import doobie.hikari.HikariTransactor
 import java.util.UUID
 
 object DoobieDemo extends IOApp.Simple {
@@ -145,16 +146,19 @@ object DoobieDemo extends IOApp.Simple {
 
   // write large queries
   def findMovieByTitle(title: String): IO[Option[Movie]] = {
-    val statement =
-      sql"""
-      select m.id, m.title, m.year_of_production, array_agg(a.name) as actors, d.name || ' ' || d.last_name
-      from movies m
-      join movies_actors ma on m.id = ma.movie_id
-      join actors a on ma.actor_id = a.id
-      join directors d on m.director_id = d.id
-      where m.title = $title
-      group by (m.id, m.title, m.year_of_production, d.name, d.last_name)
-      """
+    val statement = sql"""
+      |select m.id,
+      |  m.title,
+      |  m.year_of_production,
+      |  array_agg(a.name) as actors,
+      |  d.name || ' ' || d.last_name
+      |from movies m
+      |join movies_actors ma on m.id = ma.movie_id
+      |join actors a on ma.actor_id = a.id
+      |join directors d on m.director_id = d.id
+      |where m.title = $title
+      |group by (m.id, m.title, m.year_of_production, d.name, d.last_name)
+      |""".stripMargin
     statement.query[Movie].option.transact(xa)
   }
 
@@ -171,11 +175,11 @@ object DoobieDemo extends IOApp.Simple {
 
     def findActorsByMovieId(movieId: UUID) =
       sql"""
-          select a.name
-          from actors a
-          join movies_actors ma on a.id = ma.actor_id
-          where ma.movie_id = $movieId
-          """
+         |select a.name
+         |from actors a
+         |join movies_actors ma on a.id = ma.actor_id
+         |where ma.movie_id = $movieId
+         |""".stripMargin
         .query[String]
         .to[List]
 
@@ -197,6 +201,64 @@ object DoobieDemo extends IOApp.Simple {
     query.transact(xa)
   }
 
-  override def run: IO[Unit] =
-    findMovieByTitle_v2("Zack Snyder's Justice League").debug.void
+  // tagless final approach
+  trait Directors[F[_]] {
+    def findById(id: Int): F[Option[Director]]
+    def findAll: F[List[Director]]
+    def create(name: String, lastName: String): F[Int]
+  }
+
+  object Directors {
+    def make[F[_]: MonadCancelThrow](
+        postgres: Resource[F, Transactor[F]]
+    ): Directors[F] = {
+      new Directors[F] {
+        def findById(id: Int): F[Option[Director]] =
+          postgres.use { xa =>
+            sql"select id, name, last_name from directors where id = $id"
+              .query[Director]
+              .option
+              .transact(xa)
+          }
+
+        def findAll: F[List[Director]] =
+          postgres.use { xa =>
+            sql"select name, last_name from directors"
+              .query[Director]
+              .to[List]
+              .transact(xa)
+          }
+
+        def create(name: String, lastName: String): F[Int] =
+          postgres.use { xa =>
+            sql"insert into directors (name, last_name) values ($name, $lastName)".update
+              .withUniqueGeneratedKeys[Int]("id")
+              .transact(xa)
+          }
+      }
+    }
+  }
+
+  override def run: IO[Unit] = {
+    val postgres: Resource[IO, HikariTransactor[IO]] = for {
+      ce <- ExecutionContexts.fixedThreadPool[IO](32)
+      xa <- HikariTransactor.newHikariTransactor[IO](
+        "org.postgresql.Driver",
+        "jdbc:postgresql:myimdb",
+        "docker",
+        "docker",
+        ce
+      )
+    } yield xa
+
+    val directors: Directors[IO] = Directors.make(postgres)
+
+    val program: IO[Unit] = for {
+      id <- directors.create("Steven", "Spielberg")
+      dir <- directors.findById(id)
+      _ <- IO.println(s"The director of Jurassic Park is: $dir")
+    } yield ()
+
+    program
+  }
 }
