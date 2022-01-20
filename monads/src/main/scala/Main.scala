@@ -42,6 +42,15 @@ object MonoidsInCategoryOfEndofunctors {
     def map[A, B](fa: F[A])(f: A => B): F[B]
   }
 
+  // functor transformations
+  trait MyFunction1[-A, +B] {
+    def apply(a: A): B
+  }
+
+  trait FunctorNatTransformation[-F[_], +G[_]] {
+    def apply[A](fa: F[A]): G[A]
+  }
+
   def main(args: Array[String]): Unit = {
     println("main")
   }
