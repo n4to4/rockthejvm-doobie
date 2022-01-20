@@ -1,8 +1,10 @@
 object MonoidsInCategoryOfEndofunctors {
-  trait FunctionalMonoid[T] {
-    def unit: Unit => T
-    def combine: ((T, T)) => T
+  trait GeneralMonoid[T, U, P] {
+    def unit: U => T
+    def combine: P => T
   }
+
+  trait FunctionalMonoid[T] extends GeneralMonoid[T, Unit, (T, T)]
 
   // monoid
   trait Monoid[T] extends FunctionalMonoid[T] {
