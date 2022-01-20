@@ -1,10 +1,17 @@
 object MonoidsInCategoryOfEndofunctors {
-  trait MostAbstractMonoid[T, ~>[_, _], U, P] {
+  // "monoid in the category of T[_]"
+  trait MonoidInCategoryK2[T[_], ~>[_[_], _[_]], U[_], P[_]] {
     def unit: U ~> T // same as ~>[U, T]
     def combine: P ~> T
   }
 
-  trait GeneralMonoid[T, U, P] extends MostAbstractMonoid[T, Function1, U, P] {
+  // "monoid in a monoidal category" = "monoid in the category of T"
+  trait MonoidInCategory[T, ~>[_, _], U, P] {
+    def unit: U ~> T // same as ~>[U, T]
+    def combine: P ~> T
+  }
+
+  trait GeneralMonoid[T, U, P] extends MonoidInCategory[T, Function1, U, P] {
     // def unit: U => T
     // def combine: P => T
   }
