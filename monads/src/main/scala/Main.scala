@@ -51,6 +51,12 @@ object MonoidsInCategoryOfEndofunctors {
     def apply[A](fa: F[A]): G[A]
   }
 
+  object ListToOptionTrans extends FunctorNatTransformation[List, Option] {
+    override def apply[A](fa: List[A]): Option[A] = fa.headOption
+  }
+
+  // .toList, .toOption, .toEither, .toTry
+
   def main(args: Array[String]): Unit = {
     println("main")
   }
