@@ -73,6 +73,14 @@ object MonoidsInCategoryOfEndofunctors {
   type HKTComposition[F[_], G[_], A] = G[F[A]]
   type SameTypeComposition[F[_], A] = F[F[A]]
 
+  trait MonoidInCategoryOfFunctors[F[_]: Functor]
+      extends MonoidInCategoryK2[
+        F,
+        FunctorNatTransformation,
+        Id,
+        [A] =>> F[F[A]]
+      ]
+
   def main(args: Array[String]): Unit = {
     println("main")
   }
