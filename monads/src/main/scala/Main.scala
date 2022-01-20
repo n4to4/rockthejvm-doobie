@@ -37,6 +37,11 @@ object MonoidsInCategoryOfEndofunctors {
     override def combine(a: Int, b: Int): Int = a + b
   }
 
+  // endofunctors
+  trait Functor[F[_]] {
+    def map[A, B](fa: F[A])(f: A => B): F[B]
+  }
+
   def main(args: Array[String]): Unit = {
     println("main")
   }
