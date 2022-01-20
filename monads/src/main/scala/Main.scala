@@ -42,6 +42,10 @@ object MonoidsInCategoryOfEndofunctors {
     def map[A, B](fa: F[A])(f: A => B): F[B]
   }
 
+  given functorList: Functor[List] with {
+    def map[A, B](fa: List[A])(f: A => B): List[B] = fa.map(f)
+  }
+
   // functor transformations
   trait MyFunction1[-A, +B] {
     def apply(a: A): B
@@ -56,6 +60,13 @@ object MonoidsInCategoryOfEndofunctors {
   }
 
   // .toList, .toOption, .toEither, .toTry
+
+  // the id functor
+  type Id[A] = A
+
+  given idFunctor: Functor[Id] with {
+    def map[A, B](fa: A)(f: A => B): B = f(fa)
+  }
 
   def main(args: Array[String]): Unit = {
     println("main")
