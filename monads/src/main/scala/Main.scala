@@ -81,6 +81,7 @@ object MonoidsInCategoryOfEndofunctors {
         [A] =>> F[F[A]]
       ] {
     type FunctorProduct[A] = F[F[A]]
+    // compiler knows:
     // def unit: FunctorNatTransformation[Id, F]
     // def combine: FunctorNatTransformation[FunctorProduct, F]
   }
