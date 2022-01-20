@@ -85,6 +85,18 @@ object MonoidsInCategoryOfEndofunctors {
     // def combine: FunctorNatTransformation[FunctorProduct, F]
   }
 
+  object ListSpecialMonoid extends MonoidInCategoryOfFunctors[List] {
+    def unit: FunctorNatTransformation[Id, List] =
+      new FunctorNatTransformation[Id, List] {
+        def apply[A](fa: Id[A]): List[A] = List(fa)
+      }
+
+    def combine: FunctorNatTransformation[FunctorProduct, List] =
+      new FunctorNatTransformation[FunctorProduct, List] {
+        def apply[A](fa: List[List[A]]): List[A] = fa.flatten
+      }
+  }
+
   def main(args: Array[String]): Unit = {
     println("main")
   }
