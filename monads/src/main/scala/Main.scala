@@ -68,6 +68,11 @@ object MonoidsInCategoryOfEndofunctors {
     def map[A, B](fa: A)(f: A => B): B = f(fa)
   }
 
+  // composing functors
+  def funcComposition[A, B, C](f: A => B, g: B => C, x: A) = g(f(x))
+  type HKTComposition[F[_], G[_], A] = G[F[A]]
+  type SameTypeComposition[F[_], A] = F[F[A]]
+
   def main(args: Array[String]): Unit = {
     println("main")
   }
