@@ -94,6 +94,39 @@ object MonoidsInCategoryOfEndofunctors {
     }
   }
 
+  trait Monad[F[_]]
+      extends Functor[F]
+      with MonoidInCategoryK2[
+        F,
+        FunctorNatTransformation,
+        Id,
+        [A] =>> F[F[A]]
+      ] {
+    // "public"
+    def pure[A](a: A): F[A]
+    def flatMap[A, B](fa: F[A])(f: A => F[B]): F[B]
+
+    // functor API
+    def map[A, B](fa: F[A])(f: A => B): F[B] =
+      flatMap(fa)(a => pure(f(a)))
+
+    // aux method
+    def flatten[A](ffa: F[F[A]]): F[A] =
+      flatMap(ffa)(x => x)
+
+    type FunctorProduct[A] = F[F[A]]
+
+    def unit: FunctorNatTransformation[Id, F] =
+      new FunctorNatTransformation[Id, F] {
+        def apply[A](fa: Id[A]): F[A] = pure(fa)
+      }
+
+    def combine: FunctorNatTransformation[FunctorProduct, F] =
+      new FunctorNatTransformation[FunctorProduct, F] {
+        def apply[A](fa: F[F[A]]): F[A] = flatten(fa)
+      }
+  }
+
   object ListSpecialMonoid extends MonoidInCategoryOfFunctors[List] {
     def unit: FunctorNatTransformation[Id, List] =
       new FunctorNatTransformation[Id, List] {
