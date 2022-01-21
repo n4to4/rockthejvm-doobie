@@ -1,3 +1,7 @@
+//
+// Monads are Monoids in the Category of Endofunctors
+//
+
 object MonoidsInCategoryOfEndofunctors {
   // "monoid in the category of T[_]"
   trait MonoidInCategoryK2[T[_], ~>[_[_], _[_]], U[_], P[_]] {
