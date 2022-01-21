@@ -84,6 +84,14 @@ object MonoidsInCategoryOfEndofunctors {
     // compiler knows:
     // def unit: FunctorNatTransformation[Id, F]
     // def combine: FunctorNatTransformation[FunctorProduct, F]
+
+    // MonoidInCategoryOfFunctors == Monads
+    def pure[A](a: A): F[A] = unit(a)
+    def flatMap[A, B](fa: F[A])(f: A => F[B]): F[B] = {
+      val functor = summon[Functor[F]] // implicitly
+      val ffb: F[F[B]] = functor.map(fa)(f)
+      combine(ffb)
+    }
   }
 
   object ListSpecialMonoid extends MonoidInCategoryOfFunctors[List] {
